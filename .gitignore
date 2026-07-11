@@ -3,3 +3,6 @@ nps
 npc
 nps.exe
 npc.exe
+nps-linux-*
+npc-linux-*
+*.tar.gz
