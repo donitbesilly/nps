@@ -40,6 +40,7 @@
 
     /*bootstrap table*/
     $('#table').bootstrapTable({
+        locale: getPreferredTableLocale(),
         toolbar: "#toolbar",
         method: 'post', // 服务器数据的请求方式 get or post
         url: "{{.web_base_url}}/index/gettunnel", // 服务器数据的加载地址
@@ -74,6 +75,17 @@
                     + '<b langtag="word-compress"></b>: ' + row.Client.Cnf.Compress + '&emsp;'
                     + '<b langtag="word-basicusername"></b>: ' + row.Client.Cnf.U + '&emsp;'
                     + '<b langtag="word-basicpassword"></b>: ' + row.Client.Cnf.P + '&emsp;'
+            tmp += '<br/><br/><b langtag="word-connlogs"></b>: '
+            if (row.ConnLogs && row.ConnLogs.length > 0) {
+                tmp += '<ul style="margin-bottom:0">'
+                row.ConnLogs.forEach(function (log) {
+                    tmp += '<li>' + log.RemoteAddr + (log.Country ? ('&emsp;' + log.Country) : '')
+                            + '&emsp;' + new Date(log.Time).toLocaleString() + '</li>'
+                })
+                tmp += '</ul>'
+            } else {
+                tmp += '-'
+            }
             if (row.Mode == "p2p") {
                 return tmp + "<br/><br>"
                         + '<b langtag="word-commandaccessp2p"></b>: ' + "<code>./npc{{.win}} -server={{.ip}}:{{.p}} -vkey=" + row.Client.VerifyKey 

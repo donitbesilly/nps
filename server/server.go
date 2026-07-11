@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -22,6 +23,57 @@ import (
 	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/shirou/gopsutil/v3/net"
 )
+
+//MaxConnMapLogNum caps how many recent tcp tunnel connections are shown on
+//the standalone connection-map page, merged across all tunnels
+const MaxConnMapLogNum = 50
+
+//ConnMapLog is a flattened, JSON-friendly view of file.ConnLog plus which
+//tunnel it belongs to, used to render the connection-map page
+type ConnMapLog struct {
+	RemoteAddr string  `json:"RemoteAddr"`
+	Time       string  `json:"Time"`
+	Country    string  `json:"Country"`
+	Lat        float64 `json:"Lat"`
+	Lng        float64 `json:"Lng"`
+	HasGeo     bool    `json:"HasGeo"`
+	TunnelId   int     `json:"TunnelId"`
+	Remark     string  `json:"Remark"`
+	Port       int     `json:"Port"`
+}
+
+//GetRecentConnLogs merges the recent connection logs of every tcp/file
+//tunnel, newest first, capped to MaxConnMapLogNum
+func GetRecentConnLogs() []*ConnMapLog {
+	result := make([]*ConnMapLog, 0)
+	file.GetDb().JsonDb.Tasks.Range(func(key, value interface{}) bool {
+		t := value.(*file.Tunnel)
+		if t.Mode != "tcp" && t.Mode != "file" {
+			return true
+		}
+		t.RLock()
+		for _, l := range t.ConnLogs {
+			result = append(result, &ConnMapLog{
+				RemoteAddr: l.RemoteAddr,
+				Time:       l.Time.Format("2006-01-02 15:04:05"),
+				Country:    l.Country,
+				Lat:        l.Lat,
+				Lng:        l.Lng,
+				HasGeo:     l.HasGeo,
+				TunnelId:   t.Id,
+				Remark:     t.Remark,
+				Port:       t.Port,
+			})
+		}
+		t.RUnlock()
+		return true
+	})
+	sort.Slice(result, func(i, j int) bool { return result[i].Time > result[j].Time })
+	if len(result) > MaxConnMapLogNum {
+		result = result[:MaxConnMapLogNum]
+	}
+	return result
+}
 
 var (
 	Bridge  *bridge.Bridge

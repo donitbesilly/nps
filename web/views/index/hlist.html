@@ -38,6 +38,7 @@
 <script>
     /*bootstrap table*/
     $('#table').bootstrapTable({
+        locale: getPreferredTableLocale(),
         toolbar: "#toolbar",
         method: 'post', // 服务器数据的请求方式 get or post
         url: window.location, // 服务器数据的加载地址

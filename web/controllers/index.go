@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"encoding/json"
+
 	"ehang.io/nps/lib/file"
 	"ehang.io/nps/server"
 	"ehang.io/nps/server/tool"
@@ -21,6 +23,16 @@ func (s *IndexController) Index() {
 func (s *IndexController) Help() {
 	s.SetInfo("about")
 	s.display("index/help")
+}
+
+func (s *IndexController) Connmap() {
+	if b, err := json.Marshal(server.GetRecentConnLogs()); err == nil {
+		s.Data["connLogs"] = string(b)
+	} else {
+		s.Data["connLogs"] = "[]"
+	}
+	s.SetInfo("connmap")
+	s.display("index/connmap")
 }
 
 func (s *IndexController) Tcp() {

@@ -157,6 +157,10 @@
 		<zh-CN>客户端 ID</zh-CN>
 		<en-US>Client ID</en-US>
 	</lang>
+	<lang id="word-clientrealip">
+		<zh-CN>真实客户端IP</zh-CN>
+		<en-US>Real client IP</en-US>
+	</lang>
 	<lang id="word-clientstatus">
 		<zh-CN>客户端状态</zh-CN>
 		<en-US>Client status</en-US>
@@ -220,6 +224,18 @@
 	<lang id="word-cpu">
 		<zh-CN>处理器</zh-CN>
 		<en-US>CPU</en-US>
+	</lang>
+	<lang id="word-connlogs">
+		<zh-CN>最近连接记录</zh-CN>
+		<en-US>Recent Connections</en-US>
+	</lang>
+	<lang id="word-connmap">
+		<zh-CN>连接地图</zh-CN>
+		<en-US>Connection Map</en-US>
+	</lang>
+	<lang id="word-country">
+		<zh-CN>国家/地区</zh-CN>
+		<en-US>Country</en-US>
 	</lang>
 	<lang id="word-crypt">
 		<zh-CN>加密</zh-CN>
@@ -466,6 +482,10 @@
 	<lang id="word-tcpconnections_established">
 		<zh-CN>TCP 连接 (已建立)</zh-CN>
 		<en-US>TCP connections (establish)</en-US>
+	</lang>
+	<lang id="word-time">
+		<zh-CN>时间</zh-CN>
+		<en-US>Time</en-US>
 	</lang>
 	<lang id="word-tcpconnections">
 		<zh-CN>当前TCP连接数</zh-CN>

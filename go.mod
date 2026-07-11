@@ -17,6 +17,7 @@ require (
 	github.com/klauspost/cpuid/v2 v2.0.6 // indirect
 	github.com/klauspost/pgzip v1.2.1 // indirect
 	github.com/klauspost/reedsolomon v1.9.12 // indirect
+	github.com/lionsoul2014/ip2region/binding/golang v0.0.0-20260709160242-cd40e3a1d532 // indirect
 	github.com/panjf2000/ants/v2 v2.4.2
 	github.com/pkg/errors v0.9.1
 	github.com/shiena/ansicolor v0.0.0-20151119151921-a422bbe96644 // indirect

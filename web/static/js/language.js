@@ -1,3 +1,13 @@
+// Synchronously guess the user's locale (cookie, falling back to the
+// browser language) for bootstrap-table's own locale option, so its
+// "loading..." placeholder doesn't briefly flash in the wrong language
+// while waiting for languages.xml / cloudLang() to resolve.
+function getPreferredTableLocale() {
+	var m = document.cookie.match('(?:^|; )lang=([^;]*)');
+	var lang = (m && decodeURIComponent(m[1])) || navigator.language || navigator.userLanguage || 'zh-CN';
+	return lang.toLowerCase().indexOf('zh') === 0 ? 'zh-CN' : 'en-US';
+}
+
 (function ($) {
 
 	function xml2json(Xml) {
@@ -77,6 +87,7 @@
 	};
 
 	$.fn.setLang = function (dom) {
+		if (!languages['content']) return; // languages.xml hasn't loaded yet; cloudLang() will call setLang('') again once it has
 		languages['current'] = $('#languagemenu').attr('lang');
 		if ( dom == '' ) {
 			$('#languagemenu span').text(' ' + languages['menu'][languages['current']]);

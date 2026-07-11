@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700");
-@import url("https://fonts.googleapis.com/css?family=Roboto:400,300,500,700");
 /*
  *
  *   INSPINIA - Responsive Admin Theme
@@ -1186,7 +1184,6 @@ body.mini-navbar .navbar-default .nav > li > .nav-second-level li a {
 .footer {
   transition: margin 0s;
 }
-.pace-done .navbar-static-side,
 .pace-done .nav-header,
 .pace-done li.active,
 .pace-done #page-wrapper,
@@ -4408,7 +4405,7 @@ samp {
   border-bottom: 1px solid #e7eaec;
 }
 body {
-  font-family: "open sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", "open sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   background-color: #2f4050;
   font-size: 13px;
   color: #676a6c;
@@ -9812,5 +9809,24 @@ body.md-skin {
   }
   #page-wrapper {
     margin: 0;
+  }
+}
+
+/* bootstrap-table's built-in "loading" placeholder defaults to a huge
+   2rem font, which pops in/out much larger than the rest of the UI and
+   reads as a jarring flash when a table finishes its (usually near-
+   instant) local data fetch; tone it down to match the page's own scale
+   and fade it in instead of popping. */
+.fixed-table-loading .loading-wrap .loading-text {
+  font-size: 13px;
+  color: #999;
+}
+.fixed-table-loading {
+  opacity: 0;
+  animation: nps-loading-fade-in 0.5s 0.2s forwards;
+}
+@keyframes nps-loading-fade-in {
+  to {
+    opacity: 1;
   }
 }

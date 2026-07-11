@@ -11,6 +11,7 @@ import (
 	"ehang.io/nps/lib/common"
 	"ehang.io/nps/lib/conn"
 	"ehang.io/nps/lib/file"
+	"ehang.io/nps/lib/geoip"
 	"ehang.io/nps/server/connection"
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
@@ -103,6 +104,10 @@ func ProcessTunnel(c *conn.Conn, s *TunnelModeServer) error {
 		logs.Warn("tcp port %d ,client id %d,task id %d connect error %s", s.task.Port, s.task.Client.Id, s.task.Id, err.Error())
 		return err
 	}
+	remoteAddr := c.Conn.RemoteAddr().String()
+	logs.Info("tcp tunnel: real client %s -> local port %d -> target %s (via nps client id %d)", remoteAddr, s.task.Port, targetAddr, s.task.Client.Id)
+	country, lat, lng, hasGeo := geoip.Lookup(remoteAddr)
+	s.task.AddConnLog(remoteAddr, country, lat, lng, hasGeo)
 	return s.DealClient(c, s.task.Client, targetAddr, nil, common.CONN_TCP, nil, s.task.Flow, s.task.Target.LocalProxy)
 }
 

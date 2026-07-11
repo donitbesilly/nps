@@ -1,0 +1,77 @@
+<div class="wrapper wrapper-content animated fadeInRight">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5 langtag="word-connmap"></h5>
+                    <div class="ibox-tools">
+                        <a class="collapse-link">
+                            <i class="fa fa-chevron-up"></i>
+                        </a>
+                        <a class="close-link">
+                            <i class="fa fa-times"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="ibox-content">
+                    <div id="connMap" style="position:relative;width:100%;max-width:1100px;aspect-ratio:2/1;margin:0 auto;
+                         background-image:url('{{.web_base_url}}/static/img/world-map.svg');background-size:cover;
+                         background-repeat:no-repeat;border:1px solid #e7eaec;border-radius:3px"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5 langtag="word-connlogs"></h5>
+                </div>
+                <div class="ibox-content">
+                    <table class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th langtag="word-clientrealip"></th>
+                            <th langtag="word-country"></th>
+                            <th langtag="word-tunnel"></th>
+                            <th langtag="word-time"></th>
+                        </tr>
+                        </thead>
+                        <tbody id="connMapList"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var connLogs = JSON.parse({{.connLogs}})
+    var connMap = $("#connMap")
+    var connMapList = $("#connMapList")
+    connLogs.forEach(function (log) {
+        if (log.HasGeo) {
+            var left = ((log.Lng + 180) / 360 * 100).toFixed(2)
+            var top = ((90 - log.Lat) / 180 * 100).toFixed(2)
+            var title = log.RemoteAddr + ' ' + log.Country + ' (' + log.Remark + ':' + log.Port + ') ' + log.Time
+            connMap.append($('<span></span>').attr('title', title).css({
+                position: 'absolute', left: left + '%', top: top + '%',
+                width: '10px', height: '10px', margin: '-5px 0 0 -5px',
+                background: '#ed5565', border: '1px solid #fff', borderRadius: '50%',
+                boxShadow: '0 0 4px rgba(0,0,0,.5)', cursor: 'pointer'
+            }))
+        }
+        connMapList.append(
+            $('<tr></tr>').append(
+                $('<td></td>').text(log.RemoteAddr),
+                $('<td></td>').text(log.Country || '-'),
+                $('<td></td>').text(log.Remark + ':' + log.Port),
+                $('<td></td>').text(log.Time)
+            )
+        )
+    })
+    if (connLogs.length === 0) {
+        connMapList.append($('<tr></tr>').append($('<td colspan="4" class="text-center text-muted"></td>').text('-')))
+    }
+</script>

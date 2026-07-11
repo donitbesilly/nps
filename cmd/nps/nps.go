@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"ehang.io/nps/lib/file"
+	"ehang.io/nps/lib/geoip"
 	"ehang.io/nps/lib/install"
 	"ehang.io/nps/lib/version"
 	"ehang.io/nps/server"
@@ -203,6 +204,9 @@ func run() {
 	connection.InitConnectionService()
 	//crypt.InitTls(filepath.Join(common.GetRunPath(), "conf", "server.pem"), filepath.Join(common.GetRunPath(), "conf", "server.key"))
 	crypt.InitTls()
+	if err := geoip.Init(filepath.Join(common.GetRunPath(), "conf", "ip2region.xdb")); err != nil {
+		logs.Warn("geoip database not loaded, real client IP geolocation on the tunnel panel will be unavailable: %s", err.Error())
+	}
 	tool.InitAllowPort()
 	tool.StartSystemInfo()
 	timeout, err := beego.AppConfig.Int("disconnect_timeout")
