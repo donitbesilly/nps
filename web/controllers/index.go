@@ -2,7 +2,10 @@ package controllers
 
 import (
 	"encoding/json"
+	"strconv"
+	"strings"
 
+	"ehang.io/nps/lib/connlog"
 	"ehang.io/nps/lib/file"
 	"ehang.io/nps/server"
 	"ehang.io/nps/server/tool"
@@ -31,8 +34,59 @@ func (s *IndexController) Connmap() {
 	} else {
 		s.Data["connLogs"] = "[]"
 	}
+	if stats, err := connlog.CountByCountry(15); err == nil {
+		if b, err := json.Marshal(stats); err == nil {
+			s.Data["countryStats"] = string(b)
+		}
+	}
+	if s.Data["countryStats"] == nil {
+		s.Data["countryStats"] = "[]"
+	}
 	s.SetInfo("connmap")
 	s.display("index/connmap")
+}
+
+//ConnLogList returns a paginated, searchable, optionally tunnel-filtered
+//page of stored connection records for the connection-map history table.
+func (s *IndexController) ConnLogList() {
+	start, length := s.GetAjaxParams()
+	filter := connlog.Filter{
+		Search:   s.getEscapeString("search"),
+		TunnelId: s.GetIntNoErr("tunnel_id"),
+	}
+	list, cnt, err := connlog.List(start, length, filter)
+	if err != nil {
+		s.AjaxErr(err.Error())
+		return
+	}
+	s.AjaxTable(list, cnt, cnt, nil)
+}
+
+//DelConnLog deletes one or more connection records by id (comma-separated
+//"ids" form value). Records are otherwise kept forever.
+func (s *IndexController) DelConnLog() {
+	idsStr := s.getEscapeString("ids")
+	var ids []int64
+	for _, p := range strings.Split(idsStr, ",") {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		id, err := strconv.ParseInt(p, 10, 64)
+		if err != nil {
+			continue
+		}
+		ids = append(ids, id)
+	}
+	if len(ids) == 0 {
+		s.AjaxErr("no id given")
+		return
+	}
+	if err := connlog.Delete(ids); err != nil {
+		s.AjaxErr(err.Error())
+		return
+	}
+	s.AjaxOk("delete success")
 }
 
 func (s *IndexController) Tcp() {

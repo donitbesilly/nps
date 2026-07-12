@@ -1,0 +1,5 @@
+World cities database (worldcities.csv)
+Source: https://simplemaps.com/data/world-cities (open-source "basic" edition)
+License: MIT (attribution appreciated)
+
+Columns: city, city_ascii, lat, lng, pop, country, iso2, iso3, province

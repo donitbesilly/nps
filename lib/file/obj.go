@@ -142,36 +142,8 @@ type Tunnel struct {
 	StripPre     string
 	Target       *Target
 	MultiAccount *MultiAccount
-	ConnLogs     []*ConnLog //recent real client connections, newest first
 	Health
 	sync.RWMutex
-}
-
-//MaxConnLogNum limits how many recent connection records are kept per tunnel
-const MaxConnLogNum = 5
-
-//ConnLog records a real client connection's remote address, time and
-//an optional approximate country-level geo location
-type ConnLog struct {
-	RemoteAddr string
-	Time       time.Time
-	Country    string
-	Lat        float64
-	Lng        float64
-	HasGeo     bool
-}
-
-//AddConnLog prepends a new connection record and trims to MaxConnLogNum.
-//country/lat/lng are optional (pass hasGeo=false when unknown, e.g. private
-//or unresolvable IPs)
-func (t *Tunnel) AddConnLog(remoteAddr, country string, lat, lng float64, hasGeo bool) {
-	t.Lock()
-	defer t.Unlock()
-	log := &ConnLog{RemoteAddr: remoteAddr, Time: time.Now(), Country: country, Lat: lat, Lng: lng, HasGeo: hasGeo}
-	t.ConnLogs = append([]*ConnLog{log}, t.ConnLogs...)
-	if len(t.ConnLogs) > MaxConnLogNum {
-		t.ConnLogs = t.ConnLogs[:MaxConnLogNum]
-	}
 }
 
 type Health struct {

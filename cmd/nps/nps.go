@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"ehang.io/nps/lib/connlog"
 	"ehang.io/nps/lib/file"
 	"ehang.io/nps/lib/geoip"
 	"ehang.io/nps/lib/install"
@@ -206,6 +207,9 @@ func run() {
 	crypt.InitTls()
 	if err := geoip.Init(filepath.Join(common.GetRunPath(), "conf", "ip2region.xdb")); err != nil {
 		logs.Warn("geoip database not loaded, real client IP geolocation on the tunnel panel will be unavailable: %s", err.Error())
+	}
+	if err := connlog.Init(filepath.Join(common.GetRunPath(), "conf", "connlogs.db")); err != nil {
+		logs.Error("failed to open connection log database, the connection map page will be unavailable: %s", err.Error())
 	}
 	tool.InitAllowPort()
 	tool.StartSystemInfo()

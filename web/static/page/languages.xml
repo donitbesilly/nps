@@ -233,6 +233,10 @@
 		<zh-CN>连接地图</zh-CN>
 		<en-US>Connection Map</en-US>
 	</lang>
+	<lang id="word-countryrank">
+		<zh-CN>国家/地区排行</zh-CN>
+		<en-US>Top Countries</en-US>
+	</lang>
 	<lang id="word-country">
 		<zh-CN>国家/地区</zh-CN>
 		<en-US>Country</en-US>
@@ -248,6 +252,10 @@
 	<lang id="word-dashboard">
 		<zh-CN>仪表盘</zh-CN>
 		<en-US>Dashboard</en-US>
+	</lang>
+	<lang id="word-delete">
+		<zh-CN>删除</zh-CN>
+		<en-US>Delete</en-US>
 	</lang>
 	<lang id="word-exportflow">
 		<zh-CN>出口流量</zh-CN>

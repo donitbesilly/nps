@@ -1,6 +1,6 @@
 <div class="wrapper wrapper-content animated fadeInRight">
     <div class="row">
-        <div class="col-lg-12">
+        <div class="col-lg-8">
             <div class="ibox float-e-margins">
                 <div class="ibox-title">
                     <h5 langtag="word-connmap"></h5>
@@ -14,9 +14,19 @@
                     </div>
                 </div>
                 <div class="ibox-content">
-                    <div id="connMap" style="position:relative;width:100%;max-width:1100px;aspect-ratio:2/1;margin:0 auto;
+                    <div id="connMap" style="position:relative;width:100%;aspect-ratio:2/1;
                          background-image:url('{{.web_base_url}}/static/img/world-map.svg');background-size:cover;
                          background-repeat:no-repeat;border:1px solid #e7eaec;border-radius:3px"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5 langtag="word-countryrank"></h5>
+                </div>
+                <div class="ibox-content">
+                    <div id="countryRankChart" style="height:320px;"></div>
                 </div>
             </div>
         </div>
@@ -28,18 +38,15 @@
                 <div class="ibox-title">
                     <h5 langtag="word-connlogs"></h5>
                 </div>
-                <div class="ibox-content">
-                    <table class="table table-striped">
-                        <thead>
-                        <tr>
-                            <th langtag="word-clientrealip"></th>
-                            <th langtag="word-country"></th>
-                            <th langtag="word-tunnel"></th>
-                            <th langtag="word-time"></th>
-                        </tr>
-                        </thead>
-                        <tbody id="connMapList"></tbody>
-                    </table>
+                <div class="content">
+                    <div class="table-responsive">
+                        <div id="toolbar">
+                            <button id="btn-del-connlog" class="btn btn-danger dim" disabled>
+                                <i class="fa fa-fw fa-lg fa-trash"></i> <span langtag="word-delete"></span>
+                            </button>
+                        </div>
+                        <table id="connlog-table"></table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -48,13 +55,14 @@
 
 <script>
     var connLogs = JSON.parse({{.connLogs}})
+    var countryStats = JSON.parse({{.countryStats}})
     var connMap = $("#connMap")
-    var connMapList = $("#connMapList")
     connLogs.forEach(function (log) {
         if (log.HasGeo) {
             var left = ((log.Lng + 180) / 360 * 100).toFixed(2)
             var top = ((90 - log.Lat) / 180 * 100).toFixed(2)
-            var title = log.RemoteAddr + ' ' + log.Country + ' (' + log.Remark + ':' + log.Port + ') ' + log.Time
+            var place = [log.Country, log.Province, log.City].filter(Boolean).join(' ')
+            var title = log.RemoteAddr + ' ' + place + ' (' + log.Remark + ':' + log.Port + ') ' + log.Time
             connMap.append($('<span></span>').attr('title', title).css({
                 position: 'absolute', left: left + '%', top: top + '%',
                 width: '10px', height: '10px', margin: '-5px 0 0 -5px',
@@ -62,16 +70,95 @@
                 boxShadow: '0 0 4px rgba(0,0,0,.5)', cursor: 'pointer'
             }))
         }
-        connMapList.append(
-            $('<tr></tr>').append(
-                $('<td></td>').text(log.RemoteAddr),
-                $('<td></td>').text(log.Country || '-'),
-                $('<td></td>').text(log.Remark + ':' + log.Port),
-                $('<td></td>').text(log.Time)
-            )
-        )
     })
-    if (connLogs.length === 0) {
-        connMapList.append($('<tr></tr>').append($('<td colspan="4" class="text-center text-muted"></td>').text('-')))
+
+    var countryRankChart = echarts.init(document.getElementById('countryRankChart'))
+    countryRankChart.setOption({
+        grid: {left: '3%', right: '10%', top: '3%', bottom: '3%', containLabel: true},
+        tooltip: {trigger: 'axis', axisPointer: {type: 'shadow'}},
+        xAxis: {type: 'value'},
+        yAxis: {
+            type: 'category',
+            data: countryStats.map(function (c) { return c.Country }).reverse(),
+            axisLabel: {fontSize: 12}
+        },
+        series: [{
+            type: 'bar',
+            data: countryStats.map(function (c) { return c.Count }).reverse(),
+            itemStyle: {color: '#1ab394'},
+            label: {show: true, position: 'right'}
+        }]
+    })
+    window.addEventListener('resize', function () { countryRankChart.resize() })
+
+    var urlParams = new URLSearchParams(location.search)
+    var tunnelIdFilter = urlParams.get('tunnel_id') || ''
+
+    $('#connlog-table').bootstrapTable({
+        toolbar: "#toolbar",
+        method: 'post',
+        url: "{{.web_base_url}}/index/connloglist",
+        queryParams: function (params) {
+            return {
+                offset: params.offset,
+                limit: params.limit,
+                search: params.search,
+                tunnel_id: tunnelIdFilter
+            }
+        },
+        search: true,
+        contentType: "application/x-www-form-urlencoded",
+        striped: true,
+        showHeader: true,
+        showRefresh: true,
+        pagination: true,
+        sidePagination: 'server',
+        pageNumber: 1,
+        pageList: [10, 20, 50, 100],
+        smartDisplay: true,
+        onCheck: updateDeleteButton,
+        onUncheck: updateDeleteButton,
+        onCheckAll: updateDeleteButton,
+        onUncheckAll: updateDeleteButton,
+        columns: [
+            {field: 'state', checkbox: true},
+            {field: 'RemoteAddr', title: '<span langtag="word-clientrealip"></span>', halign: 'center'},
+            {
+                field: 'Country', title: '<span langtag="word-country"></span>', halign: 'center', align: 'center',
+                formatter: function (value, row) {
+                    return [row.Country, row.Province, row.City].filter(Boolean).join(' ') || '-'
+                }
+            },
+            {field: 'ISP', title: 'ISP', halign: 'center', align: 'center', formatter: function (v) { return v || '-' }},
+            {
+                field: 'Remark', title: '<span langtag="word-tunnel"></span>', halign: 'center', align: 'center',
+                formatter: function (value, row) { return row.Remark + ':' + row.Port }
+            },
+            {field: 'Time', title: '<span langtag="word-time"></span>', halign: 'center', align: 'center'}
+        ]
+    })
+
+    function updateDeleteButton() {
+        var ids = $('#connlog-table').bootstrapTable('getSelections').map(function (r) { return r.ID })
+        $('#btn-del-connlog').prop('disabled', ids.length === 0)
     }
+
+    $('#btn-del-connlog').on('click', function () {
+        var ids = $('#connlog-table').bootstrapTable('getSelections').map(function (r) { return r.ID })
+        if (ids.length === 0) return
+        var langobj = languages['content']['confirm']['delete']
+        var confirmMsg = (langobj[languages['current']] || langobj[languages['default']] || 'Are you sure you want to delete it?')
+        if (!confirm(confirmMsg)) return
+        $.ajax({
+            type: 'POST',
+            url: "{{.web_base_url}}/index/delconnlog",
+            data: {ids: ids.join(',')},
+            success: function (res) {
+                alert(langreply(res.msg))
+                if (res.status) {
+                    $('#connlog-table').bootstrapTable('refresh')
+                }
+            }
+        })
+    })
 </script>
