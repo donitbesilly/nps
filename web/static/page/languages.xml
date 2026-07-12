@@ -257,6 +257,10 @@
 		<zh-CN>删除</zh-CN>
 		<en-US>Delete</en-US>
 	</lang>
+	<lang id="word-domain">
+		<zh-CN>访问域名</zh-CN>
+		<en-US>Domain</en-US>
+	</lang>
 	<lang id="word-exportflow">
 		<zh-CN>出口流量</zh-CN>
 		<en-US>Export Flow</en-US>

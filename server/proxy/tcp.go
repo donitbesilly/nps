@@ -13,6 +13,7 @@ import (
 	"ehang.io/nps/lib/connlog"
 	"ehang.io/nps/lib/file"
 	"ehang.io/nps/lib/geoip"
+	"ehang.io/nps/lib/translate"
 	"ehang.io/nps/server/connection"
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
@@ -106,6 +107,7 @@ func ProcessTunnel(c *conn.Conn, s *TunnelModeServer) error {
 		return err
 	}
 	remoteAddr := c.Conn.RemoteAddr().String()
+	domain, peeked := sniffDomain(c.Conn)
 	logs.Info("tcp tunnel: real client %s -> local port %d -> target %s (via nps client id %d)", remoteAddr, s.task.Port, targetAddr, s.task.Client.Id)
 	geo := geoip.Lookup(remoteAddr)
 	if err := connlog.Insert(&connlog.Record{
@@ -120,10 +122,14 @@ func ProcessTunnel(c *conn.Conn, s *TunnelModeServer) error {
 		Lat:        geo.Lat,
 		Lng:        geo.Lng,
 		HasGeo:     geo.HasGeo,
+		Domain:     domain,
 	}); err != nil {
 		logs.Warn("failed to persist connection log: %s", err.Error())
 	}
-	return s.DealClient(c, s.task.Client, targetAddr, nil, common.CONN_TCP, nil, s.task.Flow, s.task.Target.LocalProxy)
+	if geo.CountryCode != "" && geo.CountryCode != "CN" {
+		translate.Enqueue(geo.Country, geo.Province, geo.City)
+	}
+	return s.DealClient(c, s.task.Client, targetAddr, peeked, common.CONN_TCP, nil, s.task.Flow, s.task.Target.LocalProxy)
 }
 
 //http proxy

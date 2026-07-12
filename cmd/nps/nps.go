@@ -14,6 +14,7 @@ import (
 	"ehang.io/nps/lib/file"
 	"ehang.io/nps/lib/geoip"
 	"ehang.io/nps/lib/install"
+	"ehang.io/nps/lib/translate"
 	"ehang.io/nps/lib/version"
 	"ehang.io/nps/server"
 	"ehang.io/nps/server/connection"
@@ -210,6 +211,14 @@ func run() {
 	}
 	if err := connlog.Init(filepath.Join(common.GetRunPath(), "conf", "connlogs.db")); err != nil {
 		logs.Error("failed to open connection log database, the connection map page will be unavailable: %s", err.Error())
+	}
+	if err := translate.Init(
+		beego.AppConfig.String("translate_api_url"),
+		beego.AppConfig.String("translate_api_key"),
+		beego.AppConfig.String("translate_model"),
+		filepath.Join(common.GetRunPath(), "conf", "translations.db"),
+	); err != nil {
+		logs.Warn("failed to open translation cache database, place-name translation will be unavailable: %s", err.Error())
 	}
 	tool.InitAllowPort()
 	tool.StartSystemInfo()

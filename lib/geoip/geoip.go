@@ -41,12 +41,15 @@ var (
 
 // Result is the outcome of a Lookup.
 type Result struct {
-	Country  string
-	Province string
-	City     string
-	ISP      string
-	Lat      float64
-	Lng      float64
+	Country string
+	// CountryCode is the ISO 3166-1 alpha-2 code (e.g. "CN", "US"), empty
+	// when unresolved.
+	CountryCode string
+	Province    string
+	City        string
+	ISP         string
+	Lat         float64
+	Lng         float64
 	// HasGeo is true when Lat/Lng were resolved (country private/unknown IPs
 	// leave it false and Lat/Lng at zero).
 	HasGeo bool
@@ -198,6 +201,7 @@ func Lookup(addr string) Result {
 		res.ISP = fields[3]
 	}
 	code := strings.ToUpper(strings.TrimSpace(fields[4]))
+	res.CountryCode = code
 	isChina := code == "CN"
 	// cityLatLng matches against the world-cities table's English country
 	// names, so resolve the city before swapping Country to its Chinese

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"ehang.io/nps/lib/translate"
 	_ "modernc.org/sqlite"
 )
 
@@ -32,6 +33,9 @@ type Record struct {
 	Lat        float64
 	Lng        float64
 	HasGeo     bool
+	// Domain is the HTTP Host header or TLS SNI hostname sniffed from the
+	// connection, if any (empty for non-HTTP/TLS traffic).
+	Domain string
 }
 
 // Init opens (creating if needed) the SQLite database at dbPath and ensures
@@ -67,6 +71,17 @@ func Init(dbPath string) error {
 		conn.Close()
 		return err
 	}
+	// migrate: add columns introduced after the initial schema. SQLite has
+	// no "ADD COLUMN IF NOT EXISTS", so just ignore the duplicate-column
+	// error on databases that already have them.
+	for _, stmt := range []string{
+		`ALTER TABLE conn_logs ADD COLUMN domain TEXT`,
+	} {
+		if _, err := conn.Exec(stmt); err != nil && !strings.Contains(err.Error(), "duplicate column") {
+			conn.Close()
+			return err
+		}
+	}
 	db = conn
 	return nil
 }
@@ -80,17 +95,17 @@ func Insert(r *Record) error {
 		r.Time = time.Now()
 	}
 	_, err := db.Exec(
-		`INSERT INTO conn_logs (tunnel_id, remark, port, remote_addr, time, country, province, city, isp, lat, lng, has_geo)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		`INSERT INTO conn_logs (tunnel_id, remark, port, remote_addr, time, country, province, city, isp, lat, lng, has_geo, domain)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		r.TunnelId, r.Remark, r.Port, r.RemoteAddr, r.Time.Format(timeLayout),
-		r.Country, r.Province, r.City, r.ISP, r.Lat, r.Lng, boolToInt(r.HasGeo),
+		r.Country, r.Province, r.City, r.ISP, r.Lat, r.Lng, boolToInt(r.HasGeo), r.Domain,
 	)
 	return err
 }
 
 // Filter narrows List results. Zero values mean "no filter" for that field.
 type Filter struct {
-	Search   string // matches remote_addr, country, province, city, remark (substring)
+	Search   string // matches remote_addr, country, province, city, remark, domain (substring)
 	TunnelId int
 }
 
@@ -98,9 +113,9 @@ func (f Filter) where() (string, []interface{}) {
 	var clauses []string
 	var args []interface{}
 	if f.Search != "" {
-		clauses = append(clauses, "(remote_addr LIKE ? OR country LIKE ? OR province LIKE ? OR city LIKE ? OR remark LIKE ?)")
+		clauses = append(clauses, "(remote_addr LIKE ? OR country LIKE ? OR province LIKE ? OR city LIKE ? OR remark LIKE ? OR domain LIKE ?)")
 		like := "%" + f.Search + "%"
-		args = append(args, like, like, like, like, like)
+		args = append(args, like, like, like, like, like, like)
 	}
 	if f.TunnelId != 0 {
 		clauses = append(clauses, "tunnel_id = ?")
@@ -126,7 +141,7 @@ func List(offset, limit int, filter Filter) ([]*Record, int, error) {
 	}
 
 	rows, err := db.Query(
-		"SELECT id, tunnel_id, remark, port, remote_addr, time, country, province, city, isp, lat, lng, has_geo FROM conn_logs"+
+		"SELECT id, tunnel_id, remark, port, remote_addr, time, country, province, city, isp, lat, lng, has_geo, COALESCE(domain, '') FROM conn_logs"+
 			whereSQL+" ORDER BY id DESC LIMIT ? OFFSET ?",
 		append(append([]interface{}{}, args...), limit, offset)...,
 	)
@@ -141,11 +156,22 @@ func List(offset, limit int, filter Filter) ([]*Record, int, error) {
 		var timeStr string
 		var hasGeo int
 		if err := rows.Scan(&r.ID, &r.TunnelId, &r.Remark, &r.Port, &r.RemoteAddr, &timeStr,
-			&r.Country, &r.Province, &r.City, &r.ISP, &r.Lat, &r.Lng, &hasGeo); err != nil {
+			&r.Country, &r.Province, &r.City, &r.ISP, &r.Lat, &r.Lng, &hasGeo, &r.Domain); err != nil {
 			return nil, 0, err
 		}
 		r.Time, _ = time.ParseInLocation(timeLayout, timeStr, time.Local)
 		r.HasGeo = hasGeo != 0
+		// Use a cached Chinese translation for display if one has been
+		// resolved (translate.Enqueue is called when the record is first
+		// inserted); this never blocks on the translation API itself.
+		if provinceZH, cityZH, ok := translate.Lookup(r.Country, r.Province, r.City); ok {
+			if provinceZH != "" {
+				r.Province = provinceZH
+			}
+			if cityZH != "" {
+				r.City = cityZH
+			}
+		}
 		list = append(list, r)
 	}
 	return list, total, rows.Err()
@@ -193,7 +219,9 @@ func CountByCountry(limit int) ([]CountryCount, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var out []CountryCount
+	// non-nil so json.Marshal produces [] instead of null when there are no
+	// rows yet (e.g. a fresh install with no geo-resolved connections)
+	out := make([]CountryCount, 0)
 	for rows.Next() {
 		var cc CountryCount
 		if err := rows.Scan(&cc.Country, &cc.Count); err != nil {
