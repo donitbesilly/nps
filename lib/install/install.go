@@ -316,6 +316,13 @@ func CopyDir(srcPath string, destPath string) error {
 }
 
 //生成目录并拷贝文件
+//
+// dest is written via a temp file in the same directory followed by an
+// atomic rename, rather than truncating dest in place. Overwriting dest
+// directly fails with "text file busy" when dest is a currently-running
+// executable (e.g. updating the nps binary in place); rename swaps the
+// directory entry instead of touching the old inode, so it works even
+// while the old binary is still executing.
 func copyFile(src, dest string) (w int64, err error) {
 	srcFile, err := os.Open(src)
 	if err != nil {
@@ -341,13 +348,28 @@ func copyFile(src, dest string) (w int64, err error) {
 			}
 		}
 	}
-	dstFile, err := os.Create(dest)
+	tmpFile, err := os.CreateTemp(filepath.Dir(dest), ".tmp-"+filepath.Base(dest)+"-")
 	if err != nil {
 		return
 	}
-	defer dstFile.Close()
-
-	return io.Copy(dstFile, srcFile)
+	tmpPath := tmpFile.Name()
+	w, err = io.Copy(tmpFile, srcFile)
+	if closeErr := tmpFile.Close(); err == nil {
+		err = closeErr
+	}
+	if err != nil {
+		os.Remove(tmpPath)
+		return
+	}
+	if err = os.Chmod(tmpPath, 0755); err != nil {
+		os.Remove(tmpPath)
+		return
+	}
+	if err = os.Rename(tmpPath, dest); err != nil {
+		os.Remove(tmpPath)
+		return
+	}
+	return
 }
 
 //检测文件夹路径时候存在
