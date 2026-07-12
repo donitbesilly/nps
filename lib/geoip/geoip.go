@@ -147,6 +147,15 @@ func cityLatLng(isChina bool, city, country string) (lat, lng float64, ok bool) 
 				}
 			}
 		}
+		// province-level names ("香港特别行政区", "台湾省", ...) are stored in
+		// the table without their administrative suffix
+		for _, suffix := range []string{"特别行政区", "省", "壮族自治区", "维吾尔自治区", "回族自治区", "自治区"} {
+			if trimmed := strings.TrimSuffix(city, suffix); trimmed != city {
+				if coord, exist := chinaCityCentroids[trimmed]; exist {
+					return coord[0], coord[1], true
+				}
+			}
+		}
 		return 0, 0, false
 	}
 	cityIndexOnce.Do(loadWorldCities)
@@ -215,6 +224,14 @@ func Lookup(addr string) Result {
 	}
 
 	if lat, lng, ok := cityLatLng(isChina, res.City, cityCountry); ok {
+		res.Lat, res.Lng, res.HasGeo = lat, lng, true
+		return res
+	}
+	// no usable city (e.g. Hong Kong/Macau IPs resolve to country=中国,
+	// province=香港特别行政区 with an empty city): try the province name
+	// before giving up and falling back to the country centroid, which for
+	// CN sits deep inland and puts coastal SAR dots in the wrong place.
+	if lat, lng, ok := cityLatLng(isChina, res.Province, cityCountry); ok {
 		res.Lat, res.Lng, res.HasGeo = lat, lng, true
 		return res
 	}
