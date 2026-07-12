@@ -11,6 +11,7 @@ import (
 	"ehang.io/nps/server/tool"
 
 	"github.com/astaxie/beego"
+	"github.com/astaxie/beego/logs"
 )
 
 type IndexController struct {
@@ -38,6 +39,8 @@ func (s *IndexController) Connmap() {
 		if b, err := json.Marshal(stats); err == nil {
 			s.Data["countryStats"] = string(b)
 		}
+	} else {
+		logs.Warn("connmap: CountByCountry failed: %s", err.Error())
 	}
 	if s.Data["countryStats"] == nil {
 		s.Data["countryStats"] = "[]"
@@ -46,6 +49,8 @@ func (s *IndexController) Connmap() {
 		if b, err := json.Marshal(stats); err == nil {
 			s.Data["ipStats"] = string(b)
 		}
+	} else {
+		logs.Warn("connmap: CountByIP failed: %s", err.Error())
 	}
 	if s.Data["ipStats"] == nil {
 		s.Data["ipStats"] = "[]"
@@ -53,6 +58,7 @@ func (s *IndexController) Connmap() {
 	if n, err := connlog.DistinctIPCount(); err == nil {
 		s.Data["distinctIpCount"] = n
 	} else {
+		logs.Warn("connmap: DistinctIPCount failed: %s", err.Error())
 		s.Data["distinctIpCount"] = 0
 	}
 	s.SetInfo("connmap")
