@@ -198,8 +198,19 @@ func Lookup(addr string) Result {
 		res.ISP = fields[3]
 	}
 	code := strings.ToUpper(strings.TrimSpace(fields[4]))
+	isChina := code == "CN"
+	// cityLatLng matches against the world-cities table's English country
+	// names, so resolve the city before swapping Country to its Chinese
+	// display name below.
+	cityCountry := res.Country
 
-	if lat, lng, ok := cityLatLng(code == "CN", res.City, res.Country); ok {
+	if !isChina {
+		if zh, exist := countryNamesZH[code]; exist {
+			res.Country = zh
+		}
+	}
+
+	if lat, lng, ok := cityLatLng(isChina, res.City, cityCountry); ok {
 		res.Lat, res.Lng, res.HasGeo = lat, lng, true
 		return res
 	}

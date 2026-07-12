@@ -62,7 +62,9 @@
             var left = ((log.Lng + 180) / 360 * 100).toFixed(2)
             var top = ((90 - log.Lat) / 180 * 100).toFixed(2)
             var place = [log.Country, log.Province, log.City].filter(Boolean).join(' ')
-            var title = log.RemoteAddr + ' ' + place + ' (' + log.Remark + ':' + log.Port + ') ' + log.Time
+            var logTime = new Date(log.Time)
+            var title = log.RemoteAddr + ' ' + place + ' (' + log.Remark + ':' + log.Port + ') '
+                    + (isNaN(logTime.getTime()) ? log.Time : logTime.toLocaleString('zh-CN', {hour12: false}))
             connMap.append($('<span></span>').attr('title', title).css({
                 position: 'absolute', left: left + '%', top: top + '%',
                 width: '10px', height: '10px', margin: '-5px 0 0 -5px',
@@ -134,7 +136,14 @@
                 field: 'Remark', title: '<span langtag="word-tunnel"></span>', halign: 'center', align: 'center',
                 formatter: function (value, row) { return row.Remark + ':' + row.Port }
             },
-            {field: 'Time', title: '<span langtag="word-time"></span>', halign: 'center', align: 'center'}
+            {
+                field: 'Time', title: '<span langtag="word-time"></span>', halign: 'center', align: 'center',
+                formatter: function (value) {
+                    var d = new Date(value)
+                    if (isNaN(d.getTime())) return value
+                    return d.toLocaleString('zh-CN', {hour12: false})
+                }
+            }
         ]
     })
 
