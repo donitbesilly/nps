@@ -237,6 +237,15 @@
 		<zh-CN>国家/地区排行</zh-CN>
 		<en-US>Top Countries</en-US>
 	</lang>
+	<lang id="word-iprank">
+		<zh-CN>IP排行</zh-CN>
+		<en-US>Top IPs</en-US>
+	</lang>
+	<lang id="word-distinctip">
+		<zh-CN>独立IP数</zh-CN>
+		<en-US>Distinct IPs</en-US>
+	</lang>
+
 	<lang id="word-country">
 		<zh-CN>国家/地区</zh-CN>
 		<en-US>Country</en-US>

@@ -232,6 +232,50 @@ func CountByCountry(limit int) ([]CountryCount, error) {
 	return out, rows.Err()
 }
 
+// IPCount is one row of the client IP ranking.
+type IPCount struct {
+	IP    string
+	Count int
+}
+
+// ipExpr extracts the host part of remote_addr ("ip:port" or "[ipv6]:port"),
+// stripping the port so connections from the same client group together.
+const ipExpr = `CASE WHEN substr(remote_addr, 1, 1) = '[' ` +
+	`THEN substr(remote_addr, 1, instr(remote_addr, ']')) ` +
+	`ELSE substr(remote_addr, 1, instr(remote_addr, ':') - 1) END`
+
+// CountByIP returns the top client IPs by connection count, descending.
+func CountByIP(limit int) ([]IPCount, error) {
+	if db == nil {
+		return nil, fmt.Errorf("connlog: not initialized")
+	}
+	rows, err := db.Query(
+		`SELECT `+ipExpr+` ip, COUNT(*) c FROM conn_logs WHERE remote_addr != '' GROUP BY ip ORDER BY c DESC LIMIT ?`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]IPCount, 0)
+	for rows.Next() {
+		var ic IPCount
+		if err := rows.Scan(&ic.IP, &ic.Count); err != nil {
+			return nil, err
+		}
+		out = append(out, ic)
+	}
+	return out, rows.Err()
+}
+
+// DistinctIPCount returns the number of distinct client IPs seen.
+func DistinctIPCount() (int, error) {
+	if db == nil {
+		return 0, fmt.Errorf("connlog: not initialized")
+	}
+	var n int
+	err := db.QueryRow(`SELECT COUNT(DISTINCT ` + ipExpr + `) FROM conn_logs WHERE remote_addr != ''`).Scan(&n)
+	return n, err
+}
+
 func boolToInt(b bool) int {
 	if b {
 		return 1

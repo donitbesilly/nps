@@ -42,6 +42,19 @@ func (s *IndexController) Connmap() {
 	if s.Data["countryStats"] == nil {
 		s.Data["countryStats"] = "[]"
 	}
+	if stats, err := connlog.CountByIP(15); err == nil {
+		if b, err := json.Marshal(stats); err == nil {
+			s.Data["ipStats"] = string(b)
+		}
+	}
+	if s.Data["ipStats"] == nil {
+		s.Data["ipStats"] = "[]"
+	}
+	if n, err := connlog.DistinctIPCount(); err == nil {
+		s.Data["distinctIpCount"] = n
+	} else {
+		s.Data["distinctIpCount"] = 0
+	}
 	s.SetInfo("connmap")
 	s.display("index/connmap")
 }
