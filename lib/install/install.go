@@ -202,6 +202,12 @@ func copyStaticFile(srcPath, bin string) string {
 			log.Fatalln(err)
 		}
 		chMod(filepath.Join(path, "web", "static"), 0766)
+		// optional: geoip database for the connection map, added after the
+		// initial install/update flow was designed. Silently skipped if the
+		// release archive doesn't include it (older release, or npc update).
+		if _, err := copyFile(filepath.Join(srcPath, "conf", "ip2region.xdb"), filepath.Join(path, "conf", "ip2region.xdb")); err == nil {
+			chMod(filepath.Join(path, "conf", "ip2region.xdb"), 0644)
+		}
 	}
 	binPath, _ := filepath.Abs(os.Args[0])
 	if !common.IsWindows() {
