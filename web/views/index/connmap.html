@@ -69,20 +69,19 @@
     var countryStats = JSON.parse({{.countryStats}}) || []
     var ipStats = JSON.parse({{.ipStats}}) || []
     var connMap = $("#connMap")
-    // The plate-carree map area inside world-map.svg is the "ocean" frame
-    // rectangle, NOT the full viewBox. Measured from the ocean path, that
-    // frame spans x:[-30, 2724] (lng -180..+180) and y:[61.99, 1457.56]
-    // (lat +90..-90) within the viewBox (0 0 2752.766 1537.631). The ~62px
-    // of empty padding above the frame is why mapping lat straight onto the
-    // full viewBox height pushed every dot too far north. Map lng/lat onto
-    // the ocean frame instead, then express as a percentage of the viewBox
-    // (which is what background-size:100% 100% stretches to fill the div).
-    var MAP_X0 = -30.0, MAP_X1 = 2724.0, MAP_VIEWBOX_W = 2752.766
-    var MAP_Y0 = 61.99, MAP_Y1 = 1457.56, MAP_VIEWBOX_H = 1537.631
+    // Empirically fitted lng/lat -> viewBox transform for world-map.svg.
+    // This map is NOT bounded at lng +/-180 / lat +/-90: calibrating against
+    // the SVG's own country outlines (Iceland, Ireland, Bangladesh, Nepal,
+    // Cambodia, Paraguay, Honduras -- linear least squares on their bounding
+    // box centers vs real-world coordinates, residuals < 0.1 deg) gives
+    //   x = 1270.455 + 7.6443*lng   (left edge is lng -166.2, not -180)
+    //   y = 760.002 - 7.7575*lat    (top edge is lat  +98.0, not  +90)
+    // within the viewBox (0 0 2752.766 1537.631). Percentages of the viewBox
+    // are what background-size:100% 100% stretches to fill the div.
     connLogs.forEach(function (log) {
         if (log.HasGeo) {
-            var left = ((MAP_X0 + (log.Lng + 180) / 360 * (MAP_X1 - MAP_X0)) / MAP_VIEWBOX_W * 100).toFixed(2)
-            var top = ((MAP_Y0 + (90 - log.Lat) / 180 * (MAP_Y1 - MAP_Y0)) / MAP_VIEWBOX_H * 100).toFixed(2)
+            var left = ((1270.455 + 7.6443 * log.Lng) / 2752.766 * 100).toFixed(2)
+            var top = ((760.002 - 7.7575 * log.Lat) / 1537.631 * 100).toFixed(2)
             var place = [log.Country, log.Province, log.City].filter(Boolean).join(' ')
             var logTime = new Date(log.Time)
             var title = log.RemoteAddr + ' ' + place + (log.Domain ? ' [' + log.Domain + ']' : '')
