@@ -26,7 +26,7 @@
                     <h5 langtag="word-countryrank"></h5>
                 </div>
                 <div class="ibox-content">
-                    <div id="countryRankChart" style="height:170px;"></div>
+                    <div id="countryRankChart" style="height:245px;"></div>
                 </div>
             </div>
             <div class="ibox float-e-margins">
@@ -34,7 +34,7 @@
                     <h5 langtag="word-iprank"></h5>
                 </div>
                 <div class="ibox-content">
-                    <div id="ipRankChart" style="height:170px;"></div>
+                    <div id="ipRankChart" style="height:245px;"></div>
                 </div>
             </div>
         </div>
@@ -69,10 +69,18 @@
     var countryStats = JSON.parse({{.countryStats}}) || []
     var ipStats = JSON.parse({{.ipStats}}) || []
     var connMap = $("#connMap")
+    // world-map.svg's drawn land content doesn't quite reach the edges of its
+    // own viewBox (0 0 2752.766 1537.631) -- measured directly from the path
+    // data, the content's true bounding box is x:[-32.580, 2728.460]
+    // y:[-8.000, 1457.560]. Mapping lng/lat straight onto the full viewBox
+    // (as if the content were edge-to-edge) shifts every dot right/down by a
+    // few percent; map onto the content's real bounds instead.
+    var MAP_MIN_X = -32.580, MAP_MAX_X = 2728.460, MAP_VIEWBOX_W = 2752.766
+    var MAP_MIN_Y = -8.000, MAP_MAX_Y = 1457.560, MAP_VIEWBOX_H = 1537.631
     connLogs.forEach(function (log) {
         if (log.HasGeo) {
-            var left = ((log.Lng + 180) / 360 * 100).toFixed(2)
-            var top = ((90 - log.Lat) / 180 * 100).toFixed(2)
+            var left = ((MAP_MIN_X + (log.Lng + 180) / 360 * (MAP_MAX_X - MAP_MIN_X)) / MAP_VIEWBOX_W * 100).toFixed(2)
+            var top = ((MAP_MIN_Y + (90 - log.Lat) / 180 * (MAP_MAX_Y - MAP_MIN_Y)) / MAP_VIEWBOX_H * 100).toFixed(2)
             var place = [log.Country, log.Province, log.City].filter(Boolean).join(' ')
             var logTime = new Date(log.Time)
             var title = log.RemoteAddr + ' ' + place + (log.Domain ? ' [' + log.Domain + ']' : '')
