@@ -170,6 +170,27 @@ func cityLatLng(isChina bool, city, country string) (lat, lng float64, ok bool) 
 	return 0, 0, false
 }
 
+// NormalizeISP cleans up junk ISP strings some ip2region entries carry --
+// notably Tencent Cloud ranges list Tencent's registered street address
+// ("Tencent Building, Kejizhongyi Avenue") as the ISP -- and shortens
+// well-known cloud providers' long English company names.
+func NormalizeISP(isp string) string {
+	l := strings.ToLower(isp)
+	switch {
+	case strings.Contains(l, "tencent"):
+		return "腾讯云"
+	case strings.Contains(l, "alibaba") || strings.Contains(l, "aliyun"):
+		return "阿里云"
+	case strings.Contains(l, "amazon") || strings.Contains(l, "aws"):
+		return "亚马逊云"
+	case strings.Contains(l, "microsoft"):
+		return "微软"
+	case strings.Contains(l, "google"):
+		return "谷歌"
+	}
+	return isp
+}
+
 // Lookup resolves addr (either "ip" or "ip:port") to an approximate
 // location. Private, loopback, unspecified, or unresolvable addresses (or a
 // database that hasn't loaded) return a zero-value Result with HasGeo=false.
@@ -207,7 +228,7 @@ func Lookup(addr string) Result {
 		res.City = fields[2]
 	}
 	if fields[3] != "0" {
-		res.ISP = fields[3]
+		res.ISP = NormalizeISP(fields[3])
 	}
 	code := strings.ToUpper(strings.TrimSpace(fields[4]))
 	res.CountryCode = code

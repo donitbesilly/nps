@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"ehang.io/nps/lib/geoip"
 	"ehang.io/nps/lib/translate"
 	_ "modernc.org/sqlite"
 )
@@ -161,6 +162,9 @@ func List(offset, limit int, filter Filter) ([]*Record, int, error) {
 		}
 		r.Time, _ = time.ParseInLocation(timeLayout, timeStr, time.Local)
 		r.HasGeo = hasGeo != 0
+		// normalize on read too so records stored before the ISP cleanup
+		// (e.g. Tencent Cloud's street-address ISP string) display cleanly
+		r.ISP = geoip.NormalizeISP(r.ISP)
 		// Use a cached Chinese translation for display if one has been
 		// resolved (translate.Enqueue is called when the record is first
 		// inserted); this never blocks on the translation API itself.
